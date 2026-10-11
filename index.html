@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گزارش کار روزانه</title>
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; background: #121212; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #1e1e1e; color: white; box-sizing: border-box; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; width: 100%; }
+        #preview { background: #252525; padding: 15px; border-radius: 8px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; border: 1px solid #444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ثبت گزارش کار</h2>
+    <input type="text" id="date" placeholder="تاریخ">
+    <input type="text" id="location" placeholder="محل پروژه">
+    <input type="time" id="startTime" placeholder="ساعت شروع">
+    <input type="time" id="endTime" placeholder="ساعت پایان">
+    <input type="text" id="attendees" placeholder="افراد حاضر">
+    <textarea id="tasks" rows="5" placeholder="شرح وظایف (هر خط یک وظیفه)"></textarea>
+    
+    <button onclick="generateReport()">ذخیره و پیش‌نمایش</button>
+    <button onclick="copyReport()" style="background: #28a745; margin-top: 10px;">کپی گزارش</button>
+
+    <div id="preview"></div>
+</div>
+
+<!-- JS Dependencies -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
+<script>
+    // Initialize Datepicker
+    $('#date').persianDatepicker({ format: 'YYYY/MM/DD', initialValue: true });
+
+    // Load data from localStorage
+    $(document).ready(function() {
+        ['location', 'startTime', 'endTime', 'attendees', 'tasks'].forEach(id => {
+            $('#' + id).val(localStorage.getItem(id) || '');
+        });
+    });
+
+    function generateReport() {
+        const data = {
+            date: $('#date').val(),
+            location: $('#location').val(),
+            start: $('#startTime').val(),
+            end: $('#endTime').val(),
+            attendees: $('#attendees').val(),
+            tasks: $('#tasks').val()
+        };
+
+        // Save to localStorage
+        Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
+
+        // Calculate Overtime (Standard 9 hours)
+        let start = new Date("1970-01-01T" + data.start + "Z");
+        let end = new Date("1970-01-01T" + data.end + "Z");
+        let diffHours = (end - start) / 1000 / 60 / 60;
+        let overtime = Math.max(0, diffHours - 9).toFixed(2);
+
+        const report = `تاریخ: ${data.date}\nمحل: ${data.location}\nساعت: ${data.start} تا ${data.end}\nاضافه‌کار: ${overtime} ساعت\nافراد: ${data.attendees}\nوظایف:\n${data.tasks}`;
+        $('#preview').text(report);
+    }
+
+    function copyReport() {
+        navigator.clipboard.writeText($('#preview').text());
+        alert("گزارش کپی شد!");
+    }
+</script>
+</body>
+</html>
