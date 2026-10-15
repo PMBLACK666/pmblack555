@@ -3,78 +3,366 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>گزارش کار روزانه</title>
-    <!-- CSS Dependencies -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+    <title>مدیریت طلب و بدهی | Dark Financial Manager</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas for JPG export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Persian Datepicker CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
     <style>
-        body { font-family: 'Vazirmatn', sans-serif; background: #121212; color: #e0e0e0; padding: 20px; }
-        .container { max-width: 600px; margin: auto; }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #1e1e1e; color: white; box-sizing: border-box; }
-        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; width: 100%; }
-        #preview { background: #252525; padding: 15px; border-radius: 8px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; border: 1px solid #444; }
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        /* استایل‌دهی تقویم شمسی برای هماهنگی با تم دارک */
+        .datepicker-plot-area {
+            font-family: 'Vazirmatn', sans-serif !important;
+            background-color: #090d16 !important;
+            border: 1px solid #1e293b !important;
+            color: #f8fafc !important;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5) !important;
+            border-radius: 1rem !important;
+        }
+        .datepicker-plot-area .datepicker-header {
+            background-color: #0f172a !important;
+            border-bottom: 1px solid #1e293b !important;
+        }
+        .datepicker-plot-area .datepicker-day-view .table-days td span {
+            color: #cbd5e1 !important;
+        }
+        .datepicker-plot-area .datepicker-day-view .table-days td.selected span {
+            background-color: #4f46e5 !important;
+            color: #fff !important;
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 flex flex-col justify-between">
 
-<div class="container">
-    <h2>ثبت گزارش کار</h2>
-    <input type="text" id="date" placeholder="تاریخ">
-    <input type="text" id="location" placeholder="محل پروژه">
-    <input type="time" id="startTime" placeholder="ساعت شروع">
-    <input type="time" id="endTime" placeholder="ساعت پایان">
-    <input type="text" id="attendees" placeholder="افراد حاضر">
-    <textarea id="tasks" rows="5" placeholder="شرح وظایف (هر خط یک وظیفه)"></textarea>
-    
-    <button onclick="generateReport()">ذخیره و پیش‌نمایش</button>
-    <button onclick="copyReport()" style="background: #28a745; margin-top: 10px;">کپی گزارش</button>
+    <div class="max-w-6xl mx-auto space-y-6 w-full">
+        
+        <!-- هدر برنامه -->
+        <header class="flex flex-col md:flex-row justify-between items-center bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-wallet"></i> مدیریت هوشمند طلب و بدهی
+                </h1>
+                <p class="text-slate-400 text-sm mt-1">مدیریت مالی شخصی با قابلیت ذخیره‌سازی محلی و خروجی تصویر</p>
+            </div>
+            <button onclick="exportToJPG()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium transition flex items-center gap-2 shadow-lg shadow-indigo-600/20 cursor-pointer">
+                <i class="fa-solid fa-camera"></i> دانلود خروجی JPG
+            </button>
+        </header>
 
-    <div id="preview"></div>
-</div>
+        <!-- باکس انگیزشی برایان تریسی -->
+        <div class="bg-gradient-to-r from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/30 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 text-indigo-500/10 text-8xl font-bold pointer-events-none">
+                <i class="fa-solid fa-quote-left"></i>
+            </div>
+            <p class="text-indigo-200 text-sm md:text-base font-medium leading-relaxed italic">
+                “Move out of your comfort zone. You can only grow if you are willing to feel awkward and uncomfortable when you try something new.”
+            </p>
+            <p class="text-slate-400 text-xs md:text-sm mt-2">
+                «از منطقه امن خود خارج شوید. شما فقط در صورتی می‌توانید رشد کنید که حاضر باشید هنگام تلاش برای چیز جدیدی احساس ناامنی و ناراحتی کنید.» <span class="text-emerald-400 font-semibold">– برایان تریسی</span>
+            </p>
+        </div>
 
-<!-- JS Dependencies -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
-<script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+        <!-- کارت‌های خلاصه وضعیت -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">کل طلب‌ها (فعال)</p>
+                    <h3 id="totalReceivable" class="text-2xl font-bold text-emerald-400 mt-1">۰ تومان</h3>
+                </div>
+                <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 text-xl">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">کل بدهی‌ها (فعال)</p>
+                    <h3 id="totalDebt" class="text-2xl font-bold text-rose-400 mt-1">۰ تومان</h3>
+                </div>
+                <div class="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400 text-xl">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm">تراز خالص مالی</p>
+                    <h3 id="netBalance" class="text-2xl font-bold text-sky-400 mt-1">۰ تومان</h3>
+                </div>
+                <div class="w-12 h-12 bg-sky-500/10 rounded-xl flex items-center justify-center text-sky-400 text-xl">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+            </div>
+        </div>
 
-<script>
-    // Initialize Datepicker
-    $('#date').persianDatepicker({ format: 'YYYY/MM/DD', initialValue: true });
+        <!-- فرم ثبت یا ویرایش تراکنش -->
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+            <h2 id="formTitle" class="text-lg font-semibold mb-4 text-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-indigo-400"></i> افزودن مورد جدید
+            </h2>
+            <form id="transactionForm" onsubmit="handleFormSubmit(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="hidden" id="editIndex" value="-1">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">نوع تراکنش</label>
+                    <select id="type" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none">
+                        <option value="طلب">طلب (باید بگیرم)</option>
+                        <option value="بدهی">بدهی (باید بدهم)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">به نام (شخص / شرکت)</label>
+                    <input type="text" id="person" required placeholder="مثال: شرکت آرمان" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">مبلغ (تومان)</label>
+                    <input type="text" id="amount" required placeholder="مثال: ۵,۰۰۰,۰۰۰" oninput="formatAmountInput(this)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">تاریخ رسید / سررسید</label>
+                    <input type="text" id="dueDate" readonly placeholder="انتخاب تاریخ..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs text-slate-400 mb-1">توضیحات</label>
+                    <input type="text" id="description" placeholder="بابت فاکتور شماره..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-xl font-medium transition cursor-pointer shadow-lg shadow-emerald-600/20">
+                        ذخیره مورد
+                    </button>
+                    <button type="button" id="cancelEditBtn" onclick="resetForm()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-medium transition cursor-pointer">
+                        انصراف
+                    </button>
+                </div>
+            </form>
+        </div>
 
-    // Load data from localStorage
-    $(document).ready(function() {
-        ['location', 'startTime', 'endTime', 'attendees', 'tasks'].forEach(id => {
-            $('#' + id).val(localStorage.getItem(id) || '');
+        <!-- جدول نمایش اطلاعات -->
+        <div id="captureArea" class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 md:p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <h2 class="text-lg font-semibold text-slate-200">لیست تراکنش‌های مالی</h2>
+                <span id="currentDateBadge" class="text-xs text-slate-400"></span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 text-sm">
+                            <th class="p-3">ردیف</th>
+                            <th class="p-3">نوع</th>
+                            <th class="p-3">به نام</th>
+                            <th class="p-3">مبلغ (تومان)</th>
+                            <th class="p-3">تاریخ رسید</th>
+                            <th class="p-3">وضعیت تسویه</th>
+                            <th class="p-3">توضیحات</th>
+                            <th class="p-3 text-center no-export">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody" class="divide-y divide-slate-800/60 text-sm text-slate-300">
+                        <!-- موارد از طریق جاوااسکریپت پر می‌شوند -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- فوتر داخل محدوده خروجی تصویر (نام طراح) -->
+            <div class="pt-4 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-500">
+                <span>سیستم مدیریت مالی شخصی</span>
+                <span>طراح: پیمان محمدی</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- فوتر پایین صفحه خارج از باکس عکس -->
+    <footer class="max-w-6xl mx-auto w-full text-center py-6 mt-8 text-xs text-slate-500 border-t border-slate-900">
+        طراح و توسعه‌دهنده: پیمان محمدی &copy; ۱۴۰۳
+    </footer>
+
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+        // فعال‌سازی تقویم شمسی روی فیلد تاریخ
+        $(document).ready(function() {
+            $("#dueDate").persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                observer: true
+            });
         });
-    });
 
-    function generateReport() {
-        const data = {
-            date: $('#date').val(),
-            location: $('#location').val(),
-            start: $('#startTime').val(),
-            end: $('#endTime').val(),
-            attendees: $('#attendees').val(),
-            tasks: $('#tasks').val()
-        };
+        document.getElementById('currentDateBadge').innerText = "تاریخ گزارش: " + new Date().toLocaleDateString('fa-IR');
 
-        // Save to localStorage
-        Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
+        function formatAmountInput(input) {
+            let value = input.value.replace(/[^\d۰-۹]/g, '');
+            let persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+            let englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            for (let i = 0; i < 10; i++) {
+                value = value.replace(persianNumbers[i], englishNumbers[i]);
+            }
+            if (value !== '') {
+                input.value = Number(value).toLocaleString();
+            } else {
+                input.value = '';
+            }
+        }
 
-        // Calculate Overtime (Standard 9 hours)
-        let start = new Date("1970-01-01T" + data.start + "Z");
-        let end = new Date("1970-01-01T" + data.end + "Z");
-        let diffHours = (end - start) / 1000 / 60 / 60;
-        let overtime = Math.max(0, diffHours - 9).toFixed(2);
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = '';
 
-        const report = `تاریخ: ${data.date}\nمحل: ${data.location}\nساعت: ${data.start} تا ${data.end}\nاضافه‌کار: ${overtime} ساعت\nافراد: ${data.attendees}\nوظایف:\n${data.tasks}`;
-        $('#preview').text(report);
-    }
+            let totalRec = 0;
+            let totalDeb = 0;
 
-    function copyReport() {
-        navigator.clipboard.writeText($('#preview').text());
-        alert("گزارش کپی شد!");
-    }
-</script>
+            if (transactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center p-6 text-slate-500">هیچ موردی ثبت نشده است.</td></tr>`;
+            }
+
+            transactions.forEach((tx, index) => {
+                const rawAmount = parseFloat(tx.amount.replace(/,/g, ''));
+                
+                // محاسبه فقط برای مواردی که تسویه نشده‌اند (اختیاری؛ در صورت تسویه حساب در محاسبات فعال حساب نمی‌شوند)
+                if (!tx.isCleared) {
+                    if (tx.type === 'طلب') {
+                        totalRec += rawAmount;
+                    } else {
+                        totalDeb += rawAmount;
+                    }
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-slate-800/40 transition ${tx.isCleared ? 'opacity-60 bg-slate-900/40' : ''}`;
+                
+                tr.innerHTML = `
+                    <td class="p-3">${index + 1}</td>
+                    <td class="p-3">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-medium ${tx.type === 'طلب' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                            ${tx.type}
+                        </span>
+                    </td>
+                    <td class="p-3 font-medium text-slate-200 ${tx.isCleared ? 'line-through' : ''}">${tx.person}</td>
+                    <td class="p-3 font-semibold ${tx.type === 'طلب' ? 'text-emerald-400' : 'text-rose-400'}">${tx.amount}</td>
+                    <td class="p-3 text-slate-400">${tx.dueDate || '-'}</td>
+                    <td class="p-3">
+                        <label class="inline-flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" ${tx.isCleared ? 'checked' : ''} onchange="toggleClearStatus(${index})" class="w-4 h-4 rounded accent-emerald-500 cursor-pointer">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${tx.isCleared ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'}">
+                                ${tx.isCleared ? 'تسویه شده' : 'تسویه نشده'}
+                            </span>
+                        </label>
+                    </td>
+                    <td class="p-3 text-slate-400">${tx.description || '-'}</td>
+                    <td class="p-3 text-center flex items-center justify-center gap-2">
+                        <button onclick="editTransaction(${index})" class="text-slate-400 hover:text-indigo-400 transition cursor-pointer p-1" title="ویرایش">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteTransaction(${index})" class="text-slate-400 hover:text-rose-400 transition cursor-pointer p-1" title="حذف">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('totalReceivable').innerText = totalRec.toLocaleString() + ' تومان';
+            document.getElementById('totalDebt').innerText = totalDeb.toLocaleString() + ' تومان';
+            
+            const net = totalRec - totalDeb;
+            const netElement = document.getElementById('netBalance');
+            netElement.innerText = Math.abs(net).toLocaleString() + ' تومان ' + (net >= 0 ? '(تراز مثبت)' : '(تراز منفی)');
+            netElement.className = `text-2xl font-bold mt-1 ${net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        function toggleClearStatus(index) {
+            transactions[index].isCleared = !transactions[index].isCleared;
+            renderTransactions();
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const editIndex = parseInt(document.getElementById('editIndex').value);
+            const type = document.getElementById('type').value;
+            const person = document.getElementById('person').value;
+            const amount = document.getElementById('amount').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const description = document.getElementById('description').value || '';
+
+            if (editIndex === -1) {
+                transactions.push({ type, person, amount, dueDate, description, isCleared: false });
+            } else {
+                transactions[editIndex].type = type;
+                transactions[editIndex].person = person;
+                transactions[editIndex].amount = amount;
+                transactions[editIndex].dueDate = dueDate;
+                transactions[editIndex].description = description;
+            }
+
+            resetForm();
+            renderTransactions();
+        }
+
+        function editTransaction(index) {
+            const tx = transactions[index];
+            document.getElementById('editIndex').value = index;
+            document.getElementById('type').value = tx.type;
+            document.getElementById('person').value = tx.person;
+            document.getElementById('amount').value = tx.amount;
+            document.getElementById('dueDate').value = tx.dueDate;
+            document.getElementById('description').value = tx.description;
+
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-400"></i> ویرایش تراکنش شماره ${index + 1}`;
+            document.getElementById('submitBtn').innerText = 'بروزرسانی مورد';
+            document.getElementById('submitBtn').className = "w-full bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-xl font-medium transition cursor-pointer shadow-lg shadow-indigo-600/20";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            
+            window.scrollTo({ top: 200, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            document.getElementById('transactionForm').reset();
+            document.getElementById('editIndex').value = -1;
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-plus-circle text-indigo-400"></i> افزودن مورد جدید`;
+            document.getElementById('submitBtn').innerText = 'ذخیره مورد';
+            document.getElementById('submitBtn').className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-xl font-medium transition cursor-pointer shadow-lg shadow-emerald-600/20";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        function deleteTransaction(index) {
+            if (confirm('آیا از حذف این مورد اطمینان دارید؟')) {
+                transactions.splice(index, 1);
+                resetForm();
+                renderTransactions();
+            }
+        }
+
+        function exportToJPG() {
+            const captureElement = document.getElementById('captureArea');
+            const deleteButtons = document.querySelectorAll('.no-export');
+            deleteButtons.forEach(el => el.style.display = 'none');
+
+            html2canvas(captureElement, {
+                backgroundColor: '#020617',
+                scale: 2
+            }).then(canvas => {
+                deleteButtons.forEach(el => el.style.display = '');
+
+                const link = document.createElement('a');
+                link.download = 'financial-report.jpg';
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+            });
+        }
+
+        renderTransactions();
+    </script>
 </body>
 </html>
